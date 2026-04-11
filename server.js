@@ -145,8 +145,8 @@ app.post('/api/checkout', async (c) => {
     mode: 'subscription',
     customer_email: user.email,
     line_items: [{ price: priceMap[planId], quantity: 1 }],
-    success_url: `http://localhost:${PORT}/upgrade?success=1&plan=${planId}`,
-    cancel_url: `http://localhost:${PORT}/upgrade?canceled=1`,
+    success_url: `${process.env.APP_URL || `http://localhost:${PORT}`}/upgrade?success=1&plan=${planId}`,
+    cancel_url: `${process.env.APP_URL || `http://localhost:${PORT}`}/upgrade?canceled=1`,
     metadata: { userId: user.id, planId },
   });
 
