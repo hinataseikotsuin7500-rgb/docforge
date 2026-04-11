@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocForge — AIドキュメント自動生成</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+
+    header {
+      padding: 12px 20px; border-bottom: 1px solid #21262d;
+      display: flex; align-items: center; gap: 12px;
+    }
+    header h1 { font-size: 18px; font-weight: 700; color: #58a6ff; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+    .usage-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8b949e; }
+    .usage-track { width: 80px; height: 4px; background: #21262d; border-radius: 2px; }
+    .usage-fill { height: 100%; border-radius: 2px; background: #3fb950; transition: width 0.3s; }
+    .usage-fill.warn { background: #d29922; }
+    .usage-fill.full { background: #f85149; }
+
+    .btn-upgrade {
+      background: #1f6feb; color: #fff; border: none; border-radius: 6px;
+      padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .btn-upgrade:hover { background: #388bfd; }
+
+    .user-menu { position: relative; }
+    .user-btn {
+      background: #21262d; border: 1px solid #30363d; color: #e6edf3;
+      border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    }
+    .user-btn:hover { background: #30363d; }
+    .dropdown {
+      display: none; position: absolute; right: 0; top: 36px;
+      background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+      padding: 8px; min-width: 160px; z-index: 100;
+    }
+    .dropdown.open { display: block; }
+    .dropdown a {
+      display: block; padding: 7px 12px; color: #c9d1d9;
+      text-decoration: none; font-size: 13px; border-radius: 4px;
+    }
+    .dropdown a:hover { background: #21262d; }
+    .dropdown hr { border: none; border-top: 1px solid #21262d; margin: 4px 0; }
+
+    .main { display: grid; grid-template-columns: 1fr 1fr; height: calc(100vh - 49px); }
+    .pane { display: flex; flex-direction: column; border-right: 1px solid #21262d; }
+    .pane-header {
+      padding: 10px 16px; border-bottom: 1px solid #21262d;
+      background: #161b22; font-size: 12px; font-weight: 600; color: #8b949e;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .controls {
+      display: flex; gap: 8px; padding: 8px 14px;
+      background: #161b22; border-bottom: 1px solid #21262d; align-items: center;
+    }
+    select {
+      background: #21262d; color: #e6edf3; border: 1px solid #30363d;
+      border-radius: 6px; padding: 5px 10px; font-size: 13px; cursor: pointer;
+    }
+    select:focus { outline: none; border-color: #58a6ff; }
+    .btn-gen {
+      background: #238636; color: #fff; border: none; border-radius: 6px;
+      padding: 5px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-gen:hover { background: #2ea043; }
+    .btn-gen:disabled { background: #21262d; color: #8b949e; cursor: not-allowed; }
+    .char-count { margin-left: auto; font-size: 11px; color: #484f58; }
+
+    textarea {
+      flex: 1; background: #0d1117; color: #e6edf3; border: none;
+      padding: 16px; font-family: Consolas, monospace; font-size: 13px;
+      line-height: 1.6; resize: none; outline: none;
+    }
+    textarea::placeholder { color: #484f58; }
+
+    .preview-pane { display: flex; flex-direction: column; }
+    .preview-controls {
+      display: flex; gap: 8px; padding: 8px 14px;
+      background: #161b22; border-bottom: 1px solid #21262d; align-items: center;
+    }
+    .btn-sm {
+      background: #21262d; color: #e6edf3; border: 1px solid #30363d;
+      border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    }
+    .btn-sm:hover { background: #30363d; }
+
+    #output { flex: 1; padding: 20px 24px; overflow-y: auto; font-size: 14px; line-height: 1.7; }
+    #output h1 { font-size: 20px; border-bottom: 1px solid #21262d; padding-bottom: 8px; margin: 0 0 14px; }
+    #output h2 { font-size: 17px; margin: 20px 0 10px; }
+    #output h3 { font-size: 14px; margin: 14px 0 8px; }
+    #output p { margin: 0 0 10px; color: #c9d1d9; }
+    #output ul, #output ol { margin: 0 0 10px 20px; color: #c9d1d9; }
+    #output li { margin: 3px 0; }
+    #output code { background: #161b22; border: 1px solid #21262d; border-radius: 3px; padding: 1px 5px; font-family: Consolas, monospace; font-size: 12px; color: #f0883e; }
+    #output pre { background: #161b22; border: 1px solid #21262d; border-radius: 6px; padding: 14px; overflow-x: auto; margin: 0 0 14px; }
+    #output pre code { background: none; border: none; padding: 0; color: #a5d6ff; font-size: 13px; }
+    #output table { border-collapse: collapse; width: 100%; margin: 0 0 14px; }
+    #output th, #output td { border: 1px solid #21262d; padding: 7px 12px; }
+    #output th { background: #161b22; }
+    #output td { color: #c9d1d9; }
+    #output hr { border: none; border-top: 1px solid #21262d; margin: 14px 0; }
+    #output strong { color: #e6edf3; }
+
+    .placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #484f58; text-align: center; gap: 10px; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #30363d; border-top-color: #58a6ff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* リミット超過バナー */
+    .limit-banner {
+      display: none; background: #1c1106; border: 1px solid #d29922;
+      border-radius: 8px; padding: 16px 20px; margin: 20px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .limit-banner p { font-size: 14px; color: #d29922; flex: 1; }
+    .limit-banner button {
+      background: #d29922; color: #0d1117; border: none; border-radius: 6px;
+      padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+    <rect width="24" height="24" rx="6" fill="#1f6feb"/>
+    <path d="M6 8h12M6 12h8M6 16h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+  <h1>DocForge</h1>
+
+  <div class="header-right">
+    <!-- 利用回数バー -->
+    <div class="usage-bar" id="usageBar" style="display:none">
+      <span id="usageText">0/10</span>
+      <div class="usage-track"><div class="usage-fill" id="usageFill" style="width:0%"></div></div>
+    </div>
+    <button class="btn-upgrade" onclick="window.location.href='/upgrade'" id="upgradeBtn" style="display:none">⚡ アップグレード</button>
+    <div class="user-menu" id="userMenu" style="display:none">
+      <button class="user-btn" onclick="toggleDropdown()" id="userBtn">...</button>
+      <div class="dropdown" id="dropdown">
+        <a href="/upgrade">💳 プラン変更</a>
+        <hr>
+        <a href="#" onclick="logout()">ログアウト</a>
+      </div>
+    </div>
+    <button class="btn-sm" onclick="window.location.href='/login'" id="loginBtn">ログイン / 登録</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="pane">
+    <div class="pane-header">📝 コード入力</div>
+    <div class="controls">
+      <select id="docType">
+        <option value="readme">📄 README</option>
+        <option value="functions">🔍 関数仕様書</option>
+        <option value="api">📚 API仕様書</option>
+      </select>
+      <button class="btn-gen" id="generateBtn" onclick="generate()">
+        <span id="btnIcon">✨</span><span id="btnText">生成する</span>
+      </button>
+      <span class="char-count" id="charCount">0 文字</span>
+    </div>
+    <textarea id="codeInput" placeholder="ここにコードを貼り付けてください... (Ctrl+Enter で生成)" oninput="updateCount()"></textarea>
+  </div>
+
+  <div class="preview-pane">
+    <div class="pane-header">👁 プレビュー</div>
+    <div class="preview-controls">
+      <button class="btn-sm" onclick="copyText()">📋 コピー</button>
+      <button class="btn-sm" onclick="downloadMd()">⬇ .md</button>
+    </div>
+    <div id="output">
+      <div class="placeholder">
+        <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+          <rect width="48" height="48" rx="10" fill="#21262d"/>
+          <path d="M12 16h24M12 24h16M12 32h20" stroke="#484f58" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <p>コードを入力して「生成する」を押してください</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let generatedText = '';
+  let currentUser = null;
+
+  // ── 初期化 ──
+  async function init() {
+    const token = localStorage.getItem('token');
+    if (!token) return; // 未ログインはそのまま
+
+    try {
+      const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) { localStorage.clear(); return; }
+      const data = await res.json();
+      currentUser = data.user;
+      updateUserUI(data.user, data.usage, data.limit);
+    } catch {}
+  }
+
+  function updateUserUI(user, usage, limit) {
+    document.getElementById('loginBtn').style.display = 'none';
+    document.getElementById('userMenu').style.display = 'block';
+    document.getElementById('userBtn').textContent = user.email.split('@')[0];
+    document.getElementById('usageBar').style.display = 'flex';
+    document.getElementById('upgradeBtn').style.display = user.plan === 'free' ? 'block' : 'none';
+
+    const pct = Math.min((usage / limit) * 100, 100);
+    document.getElementById('usageText').textContent = `${usage}/${limit}回`;
+    const fill = document.getElementById('usageFill');
+    fill.style.width = pct + '%';
+    fill.className = 'usage-fill' + (pct >= 100 ? ' full' : pct >= 80 ? ' warn' : '');
+  }
+
+  function toggleDropdown() {
+    document.getElementById('dropdown').classList.toggle('open');
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.user-menu')) document.getElementById('dropdown')?.classList.remove('open');
+  });
+
+  function logout() {
+    localStorage.clear();
+    window.location.reload();
+  }
+
+  // ── ドキュメント生成 ──
+  function updateCount() {
+    document.getElementById('charCount').textContent = document.getElementById('codeInput').value.length.toLocaleString() + ' 文字';
+  }
+
+  function renderMarkdown(md) {
+    return md
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/```([\s\S]*?)```/g, (_,c) => `<pre><code>${c.trim()}</code></pre>`)
+      .replace(/`([^`]+)`/g,'<code>$1</code>')
+      .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+      .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+      .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/^---$/gm,'<hr>')
+      .replace(/^\| .+\|$/gm, line => {
+        const cells = line.split('|').filter(c=>c.trim()&&!c.match(/^[-: ]+$/));
+        return cells.length ? '<tr>'+cells.map(c=>`<td>${c.trim()}</td>`).join('')+'</tr>' : '';
+      })
+      .replace(/(<tr>[\s\S]*?<\/tr>)+/g, m=>`<table>${m}</table>`)
+      .replace(/^- (.+)$/gm,'<li>$1</li>')
+      .replace(/(<li>[\s\S]*?<\/li>)+/g, m=>`<ul>${m}</ul>`)
+      .replace(/\n\n/g,'</p><p>');
+  }
+
+  async function generate() {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login'; return; }
+
+    const code = document.getElementById('codeInput').value.trim();
+    if (!code) { alert('コードを入力してください'); return; }
+
+    const docType = document.getElementById('docType').value;
+    const btn = document.getElementById('generateBtn');
+    const output = document.getElementById('output');
+
+    btn.disabled = true;
+    document.getElementById('btnIcon').innerHTML = '<span class="spinner"></span>';
+    document.getElementById('btnText').textContent = '生成中...';
+    output.innerHTML = '<div class="placeholder"><div class="spinner" style="width:28px;height:28px;border-width:3px"></div><p>AIがドキュメントを生成しています...</p></div>';
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code, docType }),
+      });
+      const data = await res.json();
+
+      if (res.status === 401) { window.location.href = '/login'; return; }
+
+      if (res.status === 429) {
+        output.innerHTML = `
+          <div class="limit-banner">
+            <p>⚠️ 今月の利用上限（${data.limit}回）に達しました。アップグレードすると引き続き使えます。</p>
+            <button onclick="window.location.href='/upgrade'">アップグレード</button>
+          </div>`;
+        return;
+      }
+
+      if (!res.ok || data.error) {
+        output.innerHTML = `<div style="color:#f85149;padding:20px">⚠️ ${data.error}</div>`;
+        return;
+      }
+
+      generatedText = data.content;
+      output.innerHTML = `<div>${renderMarkdown(data.content)}</div>`;
+
+      // 利用回数を更新
+      if (data.usage !== undefined && currentUser) {
+        updateUserUI(currentUser, data.usage, data.limit);
+      }
+
+    } catch {
+      output.innerHTML = `<div style="color:#f85149;padding:20px">⚠️ サーバーに接続できませんでした</div>`;
+    } finally {
+      btn.disabled = false;
+      document.getElementById('btnIcon').textContent = '✨';
+      document.getElementById('btnText').textContent = '生成する';
+    }
+  }
+
+  function copyText() {
+    if (!generatedText) return;
+    navigator.clipboard.writeText(generatedText).then(() => {
+      const btn = event.target;
+      btn.textContent = '✅ コピー済み';
+      setTimeout(() => btn.textContent = '📋 コピー', 2000);
+    });
+  }
+
+  function downloadMd() {
+    if (!generatedText) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([generatedText], { type: 'text/markdown' }));
+    a.download = 'document.md';
+    a.click();
+  }
+
+  document.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') generate(); });
+
+  init();
+</script>
+</body>
+</html>

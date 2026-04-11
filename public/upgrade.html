@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocForge — プランのアップグレード</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0d1117; color: #e6edf3; min-height: 100vh;
+    }
+    header {
+      padding: 16px 24px; border-bottom: 1px solid #21262d;
+      display: flex; align-items: center; gap: 12px;
+    }
+    header h1 { font-size: 20px; font-weight: 700; color: #58a6ff; }
+    header a { margin-left: auto; color: #8b949e; text-decoration: none; font-size: 13px; }
+    header a:hover { color: #e6edf3; }
+    .main { max-width: 900px; margin: 60px auto; padding: 0 24px; text-align: center; }
+    h2 { font-size: 28px; margin-bottom: 12px; }
+    .subtitle { color: #8b949e; margin-bottom: 48px; font-size: 15px; }
+    .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .plan {
+      background: #161b22; border: 1px solid #21262d; border-radius: 12px;
+      padding: 28px 24px; text-align: left; position: relative;
+    }
+    .plan.popular { border-color: #58a6ff; }
+    .badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: #58a6ff; color: #0d1117; font-size: 11px; font-weight: 700;
+      padding: 3px 12px; border-radius: 20px;
+    }
+    .plan-name { font-size: 16px; font-weight: 700; color: #8b949e; margin-bottom: 8px; }
+    .price { font-size: 32px; font-weight: 800; margin-bottom: 4px; }
+    .price span { font-size: 14px; color: #8b949e; font-weight: 400; }
+    .limit { color: #58a6ff; font-size: 13px; margin-bottom: 20px; }
+    .features { list-style: none; margin-bottom: 24px; }
+    .features li { font-size: 13px; color: #c9d1d9; padding: 5px 0; border-bottom: 1px solid #21262d; }
+    .features li::before { content: '✓ '; color: #3fb950; }
+    .btn {
+      display: block; width: 100%; padding: 11px; border-radius: 6px;
+      font-size: 14px; font-weight: 600; cursor: pointer; text-align: center;
+      border: none; transition: all 0.2s;
+    }
+    .btn-free { background: #21262d; color: #e6edf3; }
+    .btn-free:hover { background: #30363d; }
+    .btn-paid { background: #238636; color: #fff; }
+    .btn-paid:hover { background: #2ea043; }
+    .btn-paid:disabled { background: #21262d; color: #8b949e; cursor: not-allowed; }
+    .alert {
+      max-width: 500px; margin: 0 auto 32px; padding: 14px 20px;
+      border-radius: 8px; font-size: 14px;
+    }
+    .alert-success { background: #0d2818; border: 1px solid #3fb950; color: #3fb950; }
+    .alert-info { background: #0c1a2e; border: 1px solid #58a6ff; color: #58a6ff; }
+    @media (max-width: 640px) { .plans { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<header>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <rect width="24" height="24" rx="6" fill="#1f6feb"/>
+    <path d="M6 8h12M6 12h8M6 16h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+  <h1>DocForge</h1>
+  <a href="/">← アプリに戻る</a>
+</header>
+
+<div class="main">
+  <div id="alertBox" style="display:none"></div>
+
+  <h2>プランを選択</h2>
+  <p class="subtitle">いつでもキャンセル可能。年払いで20%オフ。</p>
+
+  <div class="plans">
+    <!-- Free -->
+    <div class="plan">
+      <div class="plan-name">Free</div>
+      <div class="price">¥0 <span>/月</span></div>
+      <div class="limit">月10回まで</div>
+      <ul class="features">
+        <li>README生成</li>
+        <li>関数仕様書生成</li>
+        <li>API仕様書生成</li>
+        <li>Markdownダウンロード</li>
+      </ul>
+      <button class="btn btn-free" onclick="window.location.href='/'">現在のプラン</button>
+    </div>
+
+    <!-- Solo -->
+    <div class="plan popular">
+      <div class="badge">おすすめ</div>
+      <div class="plan-name">Solo</div>
+      <div class="price">¥1,500 <span>/月</span></div>
+      <div class="limit">月100回まで</div>
+      <ul class="features">
+        <li>Freeの全機能</li>
+        <li>月100回生成</li>
+        <li>GitHub連携 (近日)</li>
+        <li>HTMLエクスポート</li>
+      </ul>
+      <button class="btn btn-paid" id="soloBtn" onclick="checkout('solo')">Soloにアップグレード</button>
+    </div>
+
+    <!-- Team -->
+    <div class="plan">
+      <div class="plan-name">Team</div>
+      <div class="price">¥8,000 <span>/月</span></div>
+      <div class="limit">月1,000回まで</div>
+      <ul class="features">
+        <li>Soloの全機能</li>
+        <li>月1,000回生成</li>
+        <li>チームメンバー共有</li>
+        <li>PDF・Notionエクスポート</li>
+      </ul>
+      <button class="btn btn-paid" id="teamBtn" onclick="checkout('team')">Teamにアップグレード</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // URLパラメータで成功/キャンセルを表示
+  const params = new URLSearchParams(location.search);
+  const alertBox = document.getElementById('alertBox');
+  if (params.get('success')) {
+    alertBox.innerHTML = '<div class="alert alert-success">✅ アップグレード完了！新しいプランが適用されました。</div>';
+    alertBox.style.display = 'block';
+  } else if (params.get('canceled')) {
+    alertBox.innerHTML = '<div class="alert alert-info">ℹ️ 決済がキャンセルされました。</div>';
+    alertBox.style.display = 'block';
+  }
+
+  async function checkout(planId) {
+    const token = localStorage.getItem('token');
+    if (!token) { window.location.href = '/login'; return; }
+
+    const btn = document.getElementById(planId + 'Btn');
+    btn.disabled = true;
+    btn.textContent = '処理中...';
+
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ planId }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'エラーが発生しました');
+        btn.disabled = false;
+        btn.textContent = planId === 'solo' ? 'Soloにアップグレード' : 'Teamにアップグレード';
+      }
+    } catch {
+      alert('サーバーに接続できませんでした');
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>
