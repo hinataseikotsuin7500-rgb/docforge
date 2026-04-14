@@ -24,7 +24,10 @@ if (!MOCK_MODE) {
   anthropic = new Anthropic.default({ apiKey: process.env.ANTHROPIC_API_KEY });
 }
 if (STRIPE_SECRET) {
-  stripe = require('stripe')(STRIPE_SECRET);
+  stripe = require('stripe')(STRIPE_SECRET, {
+    timeout: 30000,
+    maxNetworkRetries: 1,
+  });
 }
 
 const app = new Hono();
@@ -46,6 +49,17 @@ async function getUser(c) {
 app.get('/', serveStatic({ path: './public/index.html' }));
 app.get('/login', serveStatic({ path: './public/login.html' }));
 app.get('/upgrade', serveStatic({ path: './public/upgrade.html' }));
+
+// Stripe接続確認エンドポイント
+app.get('/api/stripe-check', async (c) => {
+  if (!stripe) return c.json({ ok: false, error: 'Stripe未設定' });
+  try {
+    const products = await stripe.products.list({ limit: 1 });
+    return c.json({ ok: true, count: products.data.length });
+  } catch (err) {
+    return c.json({ ok: false, error: err.message, type: err.type });
+  }
+});
 
 // ── 認証API ──
 app.post('/api/auth/signup', async (c) => {
