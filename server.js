@@ -140,37 +140,23 @@ app.post('/api/generate', async (c) => {
   }
 });
 
-// ── Stripe決済API ──
+// ── Stripe決済API (Payment Links方式) ──
 app.post('/api/checkout', async (c) => {
   const user = await getUser(c);
   if (!user) return c.json({ error: 'ログインが必要です' }, 401);
-  if (!stripe) return c.json({ error: 'Stripe未設定です' }, 503);
 
   const { planId } = await c.req.json();
-  const plan = PLANS[planId];
-  if (!plan || planId === 'free') return c.json({ error: '無効なプランです' }, 400);
+  if (!planId || planId === 'free') return c.json({ error: '無効なプランです' }, 400);
 
-  const priceMap = {
-    solo: process.env.STRIPE_PRICE_SOLO,
-    team: process.env.STRIPE_PRICE_TEAM,
+  const linkMap = {
+    solo: process.env.STRIPE_LINK_SOLO || 'https://buy.stripe.com/test_eVqdR91eX5nUgUN6fY9bO00',
+    team: process.env.STRIPE_LINK_TEAM || 'https://buy.stripe.com/test_bJecN58Hp7w28ohawe9bO01',
   };
 
-  const baseUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+  const url = linkMap[planId];
+  if (!url) return c.json({ error: '無効なプランです' }, 400);
 
-  try {
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      customer_email: user.email,
-      line_items: [{ price: priceMap[planId], quantity: 1 }],
-      success_url: `${baseUrl}/upgrade?success=1&plan=${planId}`,
-      cancel_url: `${baseUrl}/upgrade?canceled=1`,
-      metadata: { userId: user.id, planId },
-    });
-    return c.json({ url: session.url });
-  } catch (err) {
-    console.error('Stripe checkout error:', err.message);
-    return c.json({ error: 'Stripe決済の開始に失敗しました: ' + err.message }, 500);
-  }
+  return c.json({ url });
 });
 
 // Stripe Webhook (決済完了 → プランアップグレード)
