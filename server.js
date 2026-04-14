@@ -141,16 +141,22 @@ app.post('/api/checkout', async (c) => {
     team: process.env.STRIPE_PRICE_TEAM,
   };
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    customer_email: user.email,
-    line_items: [{ price: priceMap[planId], quantity: 1 }],
-    success_url: `${process.env.APP_URL || `http://localhost:${PORT}`}/upgrade?success=1&plan=${planId}`,
-    cancel_url: `${process.env.APP_URL || `http://localhost:${PORT}`}/upgrade?canceled=1`,
-    metadata: { userId: user.id, planId },
-  });
+  const baseUrl = process.env.APP_URL || `http://localhost:${PORT}`;
 
-  return c.json({ url: session.url });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer_email: user.email,
+      line_items: [{ price: priceMap[planId], quantity: 1 }],
+      success_url: `${baseUrl}/upgrade?success=1&plan=${planId}`,
+      cancel_url: `${baseUrl}/upgrade?canceled=1`,
+      metadata: { userId: user.id, planId },
+    });
+    return c.json({ url: session.url });
+  } catch (err) {
+    console.error('Stripe checkout error:', err.message);
+    return c.json({ error: 'Stripe決済の開始に失敗しました: ' + err.message }, 500);
+  }
 });
 
 // Stripe Webhook (決済完了 → プランアップグレード)
