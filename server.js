@@ -46,7 +46,8 @@ async function getUser(c) {
 }
 
 // ── 静的ファイル ──
-app.get('/', serveStatic({ path: './public/index.html' }));
+app.get('/', serveStatic({ path: './public/landing.html' }));
+app.get('/app', serveStatic({ path: './public/index.html' }));
 app.get('/login', serveStatic({ path: './public/login.html' }));
 app.get('/upgrade', serveStatic({ path: './public/upgrade.html' }));
 
